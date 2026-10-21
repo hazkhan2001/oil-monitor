@@ -174,8 +174,11 @@ class TokenCache:
     """Fetches an access token and re-fetches it shortly before it expires."""
 
     def __init__(self, client_id=None, client_secret=None):
-        self.client_id = client_id or os.environ.get("CDSE_CLIENT_ID")
-        self.client_secret = client_secret or os.environ.get("CDSE_CLIENT_SECRET")
+        # strip(): pasting a secret into a web form often drags along a
+        # trailing space or newline, which makes the server answer
+        # "401 Unauthorized". Removing stray whitespace is always safe.
+        self.client_id = (client_id or os.environ.get("CDSE_CLIENT_ID") or "").strip()
+        self.client_secret = (client_secret or os.environ.get("CDSE_CLIENT_SECRET") or "").strip()
         self._token, self._expires = None, 0.0
 
     @property
@@ -190,6 +193,13 @@ class TokenCache:
             "client_id": self.client_id,
             "client_secret": self.client_secret,
         }, timeout=30)
+        if resp.status_code in (400, 401):
+            # Say what the server said (it names the problem) without ever
+            # printing the secret itself.
+            raise RuntimeError(
+                f"Copernicus rejected the login (HTTP {resp.status_code}): {resp.text[:200]}. "
+                f"Check the CDSE_CLIENT_ID / CDSE_CLIENT_SECRET secrets "
+                f"(id length {len(self.client_id)}, secret length {len(self.client_secret)}).")
         resp.raise_for_status()
         body = resp.json()
         self._token = body["access_token"]

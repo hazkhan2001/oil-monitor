@@ -121,6 +121,11 @@ def step_sar(sheet: SheetWriter) -> None:
     if not tokens.configured:
         log("sentinel1", "skipped", "no CDSE_CLIENT_ID / CDSE_CLIENT_SECRET set")
         return
+    try:
+        tokens.get()          # test the login once, instead of failing 11 times
+    except Exception as exc:
+        log("sentinel1", "error", str(exc))
+        return
     processed = state.load("processed", {})
     pu_usage = state.load("pu_usage", {})
     memory = state.load("persistent", {})

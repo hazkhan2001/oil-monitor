@@ -47,6 +47,7 @@ def test_full_daily_run_offline(tmp_path, monkeypatch, local_sheet):
         return r
 
     monkeypatch.setattr(copernicus, "fetch_raster", fake_fetch)
+    monkeypatch.setattr(copernicus.TokenCache, "get", lambda self: "fake-token")   # no real login offline
     pw = pd.DataFrame({"date": pd.date_range("2026-09-01", periods=45), "portname": "Strait of Hormuz",
                        "n_total": range(100, 145), "n_tanker": range(30, 75)})
     monkeypatch.setattr(portwatch, "pull", lambda names, first_year: (portwatch.add_metrics(pw), []))

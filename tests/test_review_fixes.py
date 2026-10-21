@@ -100,3 +100,25 @@ def test_zero_baseline_gives_blank_not_inf():
     df = portwatch.add_metrics(portwatch.to_dataframe(rows))
     df = df.replace([np.inf, -np.inf], np.nan)  # what pull() does
     assert not np.isinf(pd.to_numeric(df["n_total_avg7_vs_avg30_pct"], errors="coerce")).any()
+
+
+def test_copernicus_login_strips_whitespace_and_explains_rejection(monkeypatch):
+    import pytest
+    from monitor import copernicus as cop
+
+    sent = {}
+
+    class Resp:
+        def __init__(self, code): self.status_code, self.text = code, '{"error":"invalid_client"}'
+        def raise_for_status(self): pass
+        def json(self): return {"access_token": "tok", "expires_in": 600}
+
+    def fake_post(url, data, timeout):
+        sent.update(data)
+        return Resp(200 if data["client_secret"] == "sekret" else 401)
+
+    monkeypatch.setattr(cop.requests, "post", fake_post)
+    assert cop.TokenCache(" abc\n", "sekret \n").get() == "tok"
+    assert sent["client_id"] == "abc" and sent["client_secret"] == "sekret"
+    with pytest.raises(RuntimeError, match="rejected the login.*invalid_client"):
+        cop.TokenCache("abc", "wrong").get()
