@@ -83,7 +83,7 @@ def build_summary(portwatch: pd.DataFrame, sar: pd.DataFrame, storage: pd.DataFr
             if len(s):
                 last = s.iloc[-1]
                 z = _num(last.get("n_vessels_z"))
-                dark_hi = _num(last.get("n_dark_high")) or 0
+                dark_hi = _num(last.get("n_dark_high"))   # None = unknown (no AIS), not zero
                 row.update({"last_scene": str(last["scene_time"])[:16],
                             "sar_vessels": _num(last.get("n_vessels")),
                             "sar_vessels_z": z,
@@ -92,7 +92,7 @@ def build_summary(portwatch: pd.DataFrame, sar: pd.DataFrame, storage: pd.DataFr
                             "dark_high_conf": dark_hi})
                 if z is not None and abs(z) >= SAR_FLAG_Z:
                     flags.append(f"radar vessel count z={z:+.1f}")
-                if dark_hi >= 1:
+                if dark_hi is not None and dark_hi >= 1:
                     flags.append(f"{int(dark_hi)} high-confidence dark candidate(s)")
         if aoi.kind == "tankfarm" and not storage.empty:
             s = storage[storage["aoi"] == aoi.key].sort_values("scene_time")
