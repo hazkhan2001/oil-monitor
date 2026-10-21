@@ -50,6 +50,8 @@ def test_full_daily_run_offline(tmp_path, monkeypatch, local_sheet):
     monkeypatch.setattr(copernicus.TokenCache, "get", lambda self: "fake-token")   # no real login offline
     from monitor import optical
     monkeypatch.setattr(optical, "search_s2", lambda *a, **k: [])   # no real Sentinel-2 search offline
+    from monitor import prices
+    monkeypatch.setattr(prices, "fetch", lambda *a, **k: pd.DataFrame({"date": ["2026-10-20"], "brent": [108.0], "wti": [101.0], "brent_wti_spread": [7.0]}))
     pw = pd.DataFrame({"date": pd.date_range("2026-09-01", periods=45), "portname": "Strait of Hormuz",
                        "n_total": range(100, 145), "n_tanker": range(30, 75)})
     monkeypatch.setattr(portwatch, "pull", lambda names, first_year: (portwatch.add_metrics(pw), []))

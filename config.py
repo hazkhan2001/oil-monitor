@@ -55,6 +55,12 @@ AOIS = [
     AOI("cape", "Cape of Good Hope", "chokepoint",
         (18.00, -34.60, 18.60, -34.20), ais=True, portwatch="Cape of Good Hope"),
 
+    # Where the WSJ (Oct 20, 2026) says tankers hand cargo to other ships after
+    # leaving Hormuz, often with transponders off. Approximate box: check the
+    # quicklook after the first pass and adjust.
+    AOI("gulfoman", "Gulf of Oman (Fujairah anchorage)", "terminal",
+        (56.35, 25.15, 56.85, 25.60), ais=True),
+
     # --- Chinese import terminals: anchorage queues -------------------------
     AOI("qingdao", "Qingdao anchorage", "terminal",
         (120.20, 35.80, 120.60, 36.05), ais=True),

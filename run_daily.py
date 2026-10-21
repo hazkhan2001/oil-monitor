@@ -29,7 +29,7 @@ from pathlib import Path
 import pandas as pd
 
 import config
-from monitor import ais, behavior, copernicus, detect, landmask, optical, passes, portwatch, report, state, storage, visual
+from monitor import ais, behavior, copernicus, detect, landmask, optical, prices, passes, portwatch, report, state, storage, visual
 from monitor.sheets import SheetWriter
 
 ROOT = Path(__file__).resolve().parent
@@ -269,6 +269,14 @@ def step_eia(sheet: SheetWriter) -> None:
             sheet.replace("Storage_Calibration", calib)
 
 
+def step_prices(sheet: SheetWriter) -> None:
+    df = prices.fetch()
+    cutoff = (NOW - timedelta(days=800)).strftime("%Y-%m-%d")
+    sheet.upsert("Prices_Daily", df[df["date"] >= cutoff], keys=["date"], sort_by=["date"])
+    last = df.dropna(subset=["brent", "wti"]).iloc[-1]
+    log("prices", "ok", f"latest {last['date']}: Brent {last['brent']:.2f}, WTI {last['wti']:.2f}")
+
+
 def step_passes(sheet: SheetWriter) -> None:
     preds = passes.predict(config.AOIS, NOW, horizon_h=36)
     state.save("passes", preds)
@@ -321,7 +329,7 @@ def step_summary(sheet: SheetWriter) -> None:
         ("" if flagged.empty else ": " + " | ".join(f"{r.location}: {r.flags}" for r in flagged.itertuples())))
 
 
-STEPS = {"portwatch": step_portwatch, "sar": step_sar, "eia": step_eia,
+STEPS = {"portwatch": step_portwatch, "sar": step_sar, "eia": step_eia, "prices": step_prices,
          "optical": step_optical, "behavior": step_behavior, "passes": step_passes, "summary": step_summary}
 
 
