@@ -86,6 +86,18 @@ def test_sheet_upsert_is_idempotent(local_sheet):
 
 def test_summary_flags_unusual_tanker_week():
     pw = pd.DataFrame([{"date": "2026-10-18", "portname": "Strait of Hormuz", "n_total_avg7": 100,
+                        "n_total_avg30": 104, "n_tanker_avg30": 38,
                         "n_total_avg7_vs_avg30_pct": -5, "n_tanker_avg7": 30, "n_tanker_avg7_vs_avg30_pct": -22}])
     s = report.build_summary(pw, pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
     assert "tanker transits -22% vs 30d" in s.set_index("location").loc["Strait of Hormuz", "flags"]
+
+
+def test_tiny_base_is_not_flagged_but_regime_change_is():
+    # The real October 2026 Hormuz case: ~1 tanker/day, vs ~45/day a year ago.
+    pw = pd.DataFrame([{"date": "2026-10-18", "portname": "Strait of Hormuz", "n_total_avg7": 3.6,
+                        "n_total_avg30": 3.7, "n_tanker_avg30": 1.0, "n_total_avg7_vs_avg30_pct": -3,
+                        "n_tanker_avg7": 0.7, "n_tanker_avg7_vs_avg30_pct": -29,
+                        "n_total_avg7_vs_avg365_pct": -94, "n_tanker_avg7_vs_avg365_pct": -98}])
+    flags = report.build_summary(pw, pd.DataFrame(), pd.DataFrame(), pd.DataFrame()) \
+        .set_index("location").loc["Strait of Hormuz", "flags"]
+    assert flags == "tanker transits -98% vs 1-year average"

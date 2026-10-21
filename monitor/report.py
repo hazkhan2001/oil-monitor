@@ -19,6 +19,10 @@ import pandas as pd
 import config
 
 PORTWATCH_FLAG_PCT = 15     # 7-day vs 30-day average beyond +/-15%
+PORTWATCH_MIN_BASE = 5      # ...but only if the 30-day average is >= 5 ships/day.
+                            # A % change on a tiny base is noise: 0.7 vs 1.0
+                            # tankers a day is "-30%" and means nothing.
+REGIME_FLAG_PCT = 40        # 7-day vs 1-year average beyond +/-40% = regime change
 SAR_FLAG_Z = 2.0
 STORAGE_FLAG_Z = 2.0
 
@@ -55,14 +59,24 @@ def build_summary(portwatch: pd.DataFrame, sar: pd.DataFrame, storage: pd.DataFr
                 last = pw.iloc[-1]
                 dev = _num(last.get("n_total_avg7_vs_avg30_pct"))
                 tdev = _num(last.get("n_tanker_avg7_vs_avg30_pct"))
+                yr = _num(last.get("n_total_avg7_vs_avg365_pct"))
+                tyr = _num(last.get("n_tanker_avg7_vs_avg365_pct"))
+                base = _num(last.get("n_total_avg30")) or 0
+                tbase = _num(last.get("n_tanker_avg30")) or 0
                 row.update({"portwatch_date": str(last["date"])[:10],
                             "transits_avg7": _num(last.get("n_total_avg7")),
                             "transits_7v30_pct": dev,
+                            "transits_7v1y_pct": yr,
                             "tankers_avg7": _num(last.get("n_tanker_avg7")),
-                            "tankers_7v30_pct": tdev})
-                if tdev is not None and abs(tdev) >= PORTWATCH_FLAG_PCT:
+                            "tankers_7v30_pct": tdev,
+                            "tankers_7v1y_pct": tyr})
+                if tyr is not None and abs(tyr) >= REGIME_FLAG_PCT:
+                    flags.append(f"tanker transits {tyr:+.0f}% vs 1-year average")
+                elif yr is not None and abs(yr) >= REGIME_FLAG_PCT:
+                    flags.append(f"transits {yr:+.0f}% vs 1-year average")
+                if tdev is not None and tbase >= PORTWATCH_MIN_BASE and abs(tdev) >= PORTWATCH_FLAG_PCT:
                     flags.append(f"tanker transits {tdev:+.0f}% vs 30d")
-                elif dev is not None and abs(dev) >= PORTWATCH_FLAG_PCT:
+                elif dev is not None and base >= PORTWATCH_MIN_BASE and abs(dev) >= PORTWATCH_FLAG_PCT:
                     flags.append(f"transits {dev:+.0f}% vs 30d")
         if aoi.kind != "tankfarm" and not sar.empty:
             s = sar[sar["aoi"] == aoi.key].sort_values("scene_time")

@@ -77,6 +77,12 @@ def add_metrics(df: pd.DataFrame) -> pd.DataFrame:
         df[f"{col}_avg7"] = by_port[col].transform(lambda s: s.rolling(7, min_periods=7).mean())
         df[f"{col}_avg30"] = by_port[col].transform(lambda s: s.rolling(30, min_periods=30).mean())
         df[f"{col}_avg7_vs_avg30_pct"] = (df[f"{col}_avg7"] / df[f"{col}_avg30"] - 1) * 100
+        # A 1-year baseline catches regime changes that a 30-day window has
+        # already absorbed (e.g. Hormuz since March 2026: the 30-day average
+        # is itself near zero, so "vs 30d" looks calm while traffic is ~95%
+        # below normal).
+        df[f"{col}_avg365"] = by_port[col].transform(lambda s: s.rolling(365, min_periods=180).mean())
+        df[f"{col}_avg7_vs_avg365_pct"] = (df[f"{col}_avg7"] / df[f"{col}_avg365"] - 1) * 100
     return df
 
 
