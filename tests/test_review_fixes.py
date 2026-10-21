@@ -122,3 +122,20 @@ def test_copernicus_login_strips_whitespace_and_explains_rejection(monkeypatch):
     assert sent["client_id"] == "abc" and sent["client_secret"] == "sekret"
     with pytest.raises(RuntimeError, match="rejected the login.*invalid_client"):
         cop.TokenCache("abc", "wrong").get()
+
+
+def test_unknown_dark_counts_are_retracted(local_sheet):
+    """Old rows written without AIS data get their dark counts blanked."""
+    import pandas as pd
+    import run_daily
+    local_sheet.replace("SAR_Detections", pd.DataFrame([
+        {"scene_time": "2026-10-18 17:25", "aoi": "cape", "scene_id": "a", "ais_ships_in_box": 0, "n_dark": 62, "n_dark_high": 0},
+        {"scene_time": "2026-10-19 17:25", "aoi": "cape", "scene_id": "b", "ais_ships_in_box": 14, "n_dark": 3, "n_dark_high": 1}]))
+    local_sheet.replace("Dark_Candidates", pd.DataFrame([
+        {"aoi": "cape", "dark_confidence": "no_ais_coverage"}, {"aoi": "cape", "dark_confidence": "high"}]))
+    run_daily.retract_unknown_dark(local_sheet)
+    run_daily.retract_unknown_dark(local_sheet)          # repeating changes nothing
+    sar = local_sheet.read("SAR_Detections")
+    assert sar.loc[0, "n_dark"] in ("", None) or pd.isna(sar.loc[0, "n_dark"])
+    assert str(sar.loc[1, "n_dark"]) == "3"
+    assert list(local_sheet.read("Dark_Candidates")["dark_confidence"]) == ["high"]

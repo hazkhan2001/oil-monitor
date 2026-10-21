@@ -216,7 +216,34 @@ def step_passes(sheet: SheetWriter) -> None:
             pass
 
 
+def retract_unknown_dark(sheet: SheetWriter) -> None:
+    """One-time tidy-up (safe to repeat): scenes with no AIS can't have dark counts.
+
+    Early runs, before AIS recording was switched on, wrote "60 dark
+    candidates" for scenes where AIS data simply didn't exist. Blank those
+    counts and drop the matching rows from Dark_Candidates.
+
+    LESSON: a function that is safe to run every day with no effect after the
+    first time is called idempotent. It lets old bad data heal itself with no
+    manual sheet editing.
+    """
+    sar = sheet.read("SAR_Detections")
+    if not sar.empty and {"ais_ships_in_box", "n_dark"} <= set(sar.columns):
+        no_ais = pd.to_numeric(sar["ais_ships_in_box"], errors="coerce").fillna(0) == 0
+        stale = no_ais & (sar["n_dark"].astype(str).str.strip() != "")
+        if stale.any():
+            sar = sar.astype(object)
+            sar.loc[no_ais, ["n_dark", "n_dark_high"]] = ""
+            sheet.replace("SAR_Detections", sar)
+    dark = sheet.read("Dark_Candidates")
+    if not dark.empty and "dark_confidence" in dark.columns:
+        keep = dark[dark["dark_confidence"] != "no_ais_coverage"]
+        if len(keep) != len(dark):
+            sheet.replace("Dark_Candidates", keep.reset_index(drop=True))
+
+
 def step_summary(sheet: SheetWriter) -> None:
+    retract_unknown_dark(sheet)
     summary = report.build_summary(sheet.read("Chokepoints_Daily"), sheet.read("SAR_Detections"),
                                    sheet.read("Storage_Index"), sheet.read("Storage_Calibration"))
     summary.insert(0, "updated_utc", NOW.strftime("%Y-%m-%d %H:%M"))
