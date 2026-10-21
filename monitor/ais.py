@@ -200,6 +200,11 @@ def score_dark(dets: pd.DataFrame, n_ais_ships: int, neighbourhood_m: float = 20
     conf = np.where(n_ais_ships == 0, "no_ais_coverage",
            np.where(np.nan_to_num(rate, nan=0) >= 0.5, "high",
            np.where(np.nan_to_num(rate, nan=0) >= 0.25, "medium", "low")))
+    if n_ais_ships == 0:
+        # LESSON: "dark" means "radar sees it, AIS doesn't". With no AIS data
+        # at all, EVERY ship looks unmatched, so the label would be noise.
+        # Honest answer: unknown. We flag nothing instead of everything.
+        candidate = np.zeros(len(dets), dtype=bool)
     dets["dark_candidate"] = candidate
     dets["dark_confidence"] = np.where(candidate, conf, "")
     return dets

@@ -48,6 +48,20 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+      # Quicklook images go to a throwaway branch named "previews" that is
+      # force-overwritten every run, so the repo history doesn't fill up with
+      # pictures. Browse it at: github.com/<you>/oil-monitor/tree/previews
+      - name: Publish preview images
+        if: always()
+        run: |
+          [ -d output/quicklooks ] || exit 0
+          d=$(mktemp -d); cp -r output/quicklooks "$d/"
+          cd "$d"; git init -q -b previews
+          git config user.name "oil-monitor-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -qm "previews $(date -u +%FT%H%M)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" previews || echo "preview push failed (non-fatal)"
+
       - name: Save state
         if: always()
         run: |

@@ -98,8 +98,9 @@ def process_sea_scene(aoi, scene, raster, memory) -> tuple[dict, pd.DataFrame]:
         "n_persistent": int(dets["persistent"].sum()) if len(dets) else 0,
         "ais_recorded": bool(len(ais_raw)), "ais_ships_in_box": len(ais_now),
         "n_matched": int(dets["mmsi"].notna().sum()) if len(dets) else 0,
-        "n_dark": int(dets["dark_candidate"].sum()) if len(dets) else 0,
-        "n_dark_high": int((dets["dark_confidence"] == "high").sum()) if len(dets) else 0,
+        # None (blank cell) when AIS gave us nothing to compare against.
+        "n_dark": (int(dets["dark_candidate"].sum()) if len(dets) else 0) if len(ais_now) else None,
+        "n_dark_high": (int((dets["dark_confidence"] == "high").sum()) if len(dets) else 0) if len(ais_now) else None,
         "pu_spent": round(raster.pu_spent, 2),
     }
     stem = f"{aoi.key}_{scene.scene_id}"

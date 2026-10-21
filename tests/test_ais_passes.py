@@ -52,7 +52,7 @@ def test_match_pairs_each_ship_once_and_leaves_dark_one():
 def test_no_ais_means_no_coverage_label_not_high():
     dets = ais.match(_dets([(26.4, 56.4)]), pd.DataFrame(columns=["mmsi", "name", "lat_pred", "lon_pred"]))
     scored = ais.score_dark(dets, n_ais_ships=0)
-    assert scored.dark_confidence[0] == "no_ais_coverage"
+    assert not scored.dark_candidate.any()          # no AIS data: unknown, so nothing is called dark
 
 
 def test_persistent_and_small_targets_are_not_dark():
