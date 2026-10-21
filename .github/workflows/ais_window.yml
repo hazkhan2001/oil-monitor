@@ -1,0 +1,48 @@
+# Hourly check: is a Sentinel-1 pass coming? If so, record AIS around it.
+#
+# Off by default. Turn it on by creating a repository VARIABLE (not secret)
+# named AIS_ENABLED with value true (Settings > Secrets and variables >
+# Actions > Variables). When it's off the job is skipped, and skipped jobs
+# cost no Actions minutes.
+#
+# Cost note: on a PUBLIC repo Actions minutes are free and unlimited. On a
+# PRIVATE repo you get 2,000 min/month, and this job alone uses roughly
+# 720 (hourly checks) plus waiting/recording time, which will exceed it.
+name: ais-window
+
+on:
+  schedule:
+    - cron: "5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ais-window
+  cancel-in-progress: false
+
+jobs:
+  record:
+    if: vars.AIS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install pandas==3.0.5 numpy==2.5.3 websockets==17.3
+      - name: Record AIS if a pass is due
+        env:
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+        run: python run_ais_window.py
+      - name: Save recording
+        run: |
+          git config user.name "oil-monitor-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/ais
+          git diff --cached --quiet && exit 0
+          git commit -m "ais: recording $(date -u +%FT%H%M)"
+          for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done

@@ -1,0 +1,59 @@
+# The morning job.
+#
+# LESSON: cron syntax is five fields: minute hour day-of-month month day-of-week.
+#   "30 10 * * *"  = 10:30 UTC every day
+#                  = 6:30 AM New York in summer (EDT), 5:30 AM in winter (EST).
+# GitHub only speaks UTC and may start scheduled runs 5-30 minutes late
+# when its servers are busy.
+name: daily
+
+on:
+  schedule:
+    - cron: "30 10 * * *"
+  workflow_dispatch: {}          # adds a "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write                # needed to commit state/ back to the repo
+
+concurrency:
+  group: daily
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Run the monitor
+        env:
+          CDSE_CLIENT_ID: ${{ secrets.CDSE_CLIENT_ID }}
+          CDSE_CLIENT_SECRET: ${{ secrets.CDSE_CLIENT_SECRET }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: python run_daily.py
+
+      - name: Upload images and local tables
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: output-${{ github.run_id }}
+          path: output/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Save state
+        if: always()
+        run: |
+          git config user.name "oil-monitor-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state
+          git diff --cached --quiet && exit 0
+          git commit -m "state: daily run $(date -u +%F)"
+          for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done
