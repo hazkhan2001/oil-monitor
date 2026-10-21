@@ -29,7 +29,7 @@ from pathlib import Path
 import pandas as pd
 
 import config
-from monitor import ais, behavior, copernicus, detect, landmask, passes, portwatch, report, state, storage, visual
+from monitor import ais, behavior, copernicus, detect, landmask, optical, passes, portwatch, report, state, storage, visual
 from monitor.sheets import SheetWriter
 
 ROOT = Path(__file__).resolve().parent
@@ -190,6 +190,64 @@ def step_sar(sheet: SheetWriter) -> None:
 
 
 # --------------------------------------------------------------------------
+def step_optical(sheet: SheetWriter) -> None:
+    """Clear-sky Sentinel-2 pictures of the Cushing tank farm (a visual cross-check on radar)."""
+    from PIL import Image
+
+    tokens = copernicus.TokenCache()
+    if not tokens.configured:
+        log("optical", "skipped", "no CDSE credentials")
+        return
+    farm = config.AOI_BY_KEY["cushing"]
+    done = state.load("optical_done", {})
+    pu_usage = state.load("pu_usage", {})
+    month = NOW.strftime("%Y-%m")
+    rows = []
+    try:
+        scenes = optical.search_s2(farm.bbox, NOW - timedelta(days=7), NOW)
+    except Exception as exc:
+        log("optical", "error", repr(exc))
+        return
+    try:
+        for sc in scenes:
+            if sc["scene_id"] in done:
+                continue
+            if sc["tile_cloud_pct"] is not None and sc["tile_cloud_pct"] > optical.MAX_TILE_CLOUD_PCT:
+                done[sc["scene_id"]] = NOW.strftime("%Y-%m-%d")
+                rows.append({"scene_time": sc["start"].strftime("%Y-%m-%d %H:%M"), "aoi": "cushing", "scene_id": sc["scene_id"],
+                             "tile_cloud_pct": sc["tile_cloud_pct"], "local_cloud_pct": None, "status": "cloudy_tile", "picture": ""})
+                continue
+            est = copernicus.estimate_pu(farm.bbox, 10) * 2
+            if pu_usage.get(month, 0) + est > config.MONTHLY_PU_BUDGET:
+                log("optical", "skipped", "monthly PU budget reached")
+                break
+            try:
+                rgb, flags, valid = optical.fetch_true_colour(sc, farm.bbox, tokens)
+            except Exception as exc:
+                log(f"optical {sc['scene_id']}", "error", repr(exc))
+                continue
+            pu_usage[month] = round(pu_usage.get(month, 0) + est, 2)
+            done[sc["scene_id"]] = NOW.strftime("%Y-%m-%d")
+            frac = optical.cloud_fraction(flags, valid)
+            clear = frac is not None and frac <= optical.MAX_LOCAL_CLOUD
+            pic = ""
+            if clear:
+                pic = f"cushing_optical_{sc['scene_id']}.png"
+                path = OUT / "quicklooks" / pic
+                path.parent.mkdir(parents=True, exist_ok=True)
+                Image.fromarray(rgb.astype("uint8")).save(path)
+            rows.append({"scene_time": sc["start"].strftime("%Y-%m-%d %H:%M"), "aoi": "cushing", "scene_id": sc["scene_id"],
+                         "tile_cloud_pct": sc["tile_cloud_pct"], "local_cloud_pct": None if frac is None else round(frac * 100, 1),
+                         "status": "clear_saved" if clear else "cloudy_farm", "picture": pic})
+    finally:
+        cutoff = (NOW - timedelta(days=30)).strftime("%Y-%m-%d")
+        state.save("optical_done", {k: v for k, v in done.items() if v >= cutoff})
+        state.save("pu_usage", pu_usage)
+    if rows:
+        sheet.upsert("Optical_Checks", pd.DataFrame(rows), keys=["scene_id"], sort_by=["scene_time"])
+    log("optical", "ok", f"{len(rows)} new Sentinel-2 scenes checked, {sum(r['status'] == 'clear_saved' for r in rows)} clear pictures saved")
+
+
 def step_behavior(sheet: SheetWriter) -> None:
     """Summarise tanker behaviour from AIS recordings (before step_passes deletes old ones)."""
     df = behavior.summarize_dir(AIS_DIR) if AIS_DIR.exists() else pd.DataFrame()
@@ -264,7 +322,7 @@ def step_summary(sheet: SheetWriter) -> None:
 
 
 STEPS = {"portwatch": step_portwatch, "sar": step_sar, "eia": step_eia,
-         "behavior": step_behavior, "passes": step_passes, "summary": step_summary}
+         "optical": step_optical, "behavior": step_behavior, "passes": step_passes, "summary": step_summary}
 
 
 def main() -> int:
