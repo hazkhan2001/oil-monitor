@@ -29,7 +29,7 @@ from pathlib import Path
 import pandas as pd
 
 import config
-from monitor import ais, copernicus, detect, landmask, passes, portwatch, report, state, storage, visual
+from monitor import ais, behavior, copernicus, detect, landmask, passes, portwatch, report, state, storage, visual
 from monitor.sheets import SheetWriter
 
 ROOT = Path(__file__).resolve().parent
@@ -190,6 +190,16 @@ def step_sar(sheet: SheetWriter) -> None:
 
 
 # --------------------------------------------------------------------------
+def step_behavior(sheet: SheetWriter) -> None:
+    """Summarise tanker behaviour from AIS recordings (before step_passes deletes old ones)."""
+    df = behavior.summarize_dir(AIS_DIR) if AIS_DIR.exists() else pd.DataFrame()
+    if df.empty:
+        log("behavior", "ok", "no AIS recordings yet (is AIS_ENABLED set?)")
+        return
+    n = sheet.upsert("AIS_Behavior", df, keys=["window", "aoi"], sort_by=["window", "aoi"])
+    log("behavior", "ok", f"{len(df)} window summaries, tab now {n} rows")
+
+
 def step_eia(sheet: SheetWriter) -> None:
     stocks = storage.fetch_cushing_stocks()
     sheet.upsert("EIA_Cushing", stocks.tail(260), keys=["date"], sort_by=["date"])
@@ -254,7 +264,7 @@ def step_summary(sheet: SheetWriter) -> None:
 
 
 STEPS = {"portwatch": step_portwatch, "sar": step_sar, "eia": step_eia,
-         "passes": step_passes, "summary": step_summary}
+         "behavior": step_behavior, "passes": step_passes, "summary": step_summary}
 
 
 def main() -> int:
