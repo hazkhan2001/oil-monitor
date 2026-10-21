@@ -148,8 +148,13 @@ def positions_at(ais: pd.DataFrame, when: datetime, max_gap_min: float) -> pd.Da
     df["dt_s"] = (pd.Timestamp(when) - df["time"]).dt.total_seconds()
     df = df[df["dt_s"].abs() <= max_gap_min * 60]
     df = df.loc[df.groupby("mmsi")["dt_s"].apply(lambda s: s.abs().idxmin())] if len(df) else df
-    sog = pd.to_numeric(df["sog"], errors="coerce").fillna(0).clip(upper=40)  # 102.3 = "not available"
-    cog = pd.to_numeric(df["cog"], errors="coerce").fillna(0)
+    # AIS uses special values for "unknown": speed 102.3 knots, course 360.
+    # Projecting those would fling a ship kilometres away, so unknown
+    # speed or course means "assume it stayed where it reported".
+    sog = pd.to_numeric(df["sog"], errors="coerce")
+    cog = pd.to_numeric(df["cog"], errors="coerce")
+    usable = sog.notna() & (sog < 102.2) & cog.notna() & (cog < 360)
+    sog, cog = sog.where(usable, 0.0), cog.where(usable, 0.0)
     dist = sog * KNOT_MS * df["dt_s"]
     north, east = dist * np.cos(np.radians(cog)), dist * np.sin(np.radians(cog))
     df = df.copy()

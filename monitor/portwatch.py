@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import time
 
+import numpy as np
 import pandas as pd
 import requests
 
@@ -108,5 +109,5 @@ def pull(portnames: list[str], first_year: int) -> tuple[pd.DataFrame, list[str]
     out = add_metrics(data)
     for col in out.columns:
         if out[col].dtype.kind == "f":
-            out[col] = out[col].round(3)
+            out[col] = out[col].replace([np.inf, -np.inf], np.nan).round(3)
     return out, warnings

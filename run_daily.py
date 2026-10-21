@@ -75,7 +75,9 @@ def process_sea_scene(aoi, scene, raster, memory) -> tuple[dict, pd.DataFrame]:
     px = aoi.resolution_m
     sea = landmask.sea_mask(raster, aoi.land_buffer_m, px)
     dets = detect.detect_ships(raster, sea, px)
-    dets = detect.flag_persistent(aoi.key, dets, memory)
+    # Only well-covered scenes update the memory of where bright things sit.
+    full_cover = (raster.valid & sea).sum() >= 0.8 * sea.sum()
+    dets = detect.flag_persistent(aoi.key, dets, memory, record=bool(full_cover))
 
     ais_raw = load_ais_near(scene.start, aoi.key) if aoi.ais else pd.DataFrame(columns=ais.AIS_COLUMNS)
     ais_now = ais.positions_at(ais_raw, scene.start, config.AIS_MAX_TIME_GAP_MIN)

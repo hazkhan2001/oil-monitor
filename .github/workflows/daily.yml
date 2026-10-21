@@ -56,4 +56,5 @@ jobs:
           git add state
           git diff --cached --quiet && exit 0
           git commit -m "state: daily run $(date -u +%F)"
-          for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done
+          ok=0; for i in 1 2 3; do if git pull --rebase && git push; then ok=1; break; fi; sleep 5; done
+          [ "$ok" = 1 ] || { echo "could not push state"; exit 1; }

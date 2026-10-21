@@ -81,7 +81,7 @@ the accounts one at a time.
 
 ```
 pip install -r requirements.txt
-python -m pytest -q                         # 23 tests, no internet needed
+python -m pytest -q                         # 34 tests, no internet needed
 python run_daily.py --only portwatch,eia    # needs internet; writes output/sheet/*.csv
 ```
 
@@ -101,6 +101,6 @@ python run_daily.py --only portwatch,eia    # needs internet; writes output/shee
 | `monitor/sheets.py` | Google Sheet / CSV writer | classes, idempotent upserts |
 | `run_daily.py` | the morning job | try/except per step, exit codes |
 | `run_ais_window.py` | hourly AIS recorder | sleeping until an event |
-| `tests/` | 23 tests incl. a full offline run | fixtures, monkeypatching, synthetic data |
+| `tests/` | 34 tests incl. a full offline run | fixtures, monkeypatching, synthetic data |
 
 Data credits: IMF PortWatch; Copernicus Sentinel data (ESA/EU); AISstream.io; U.S. EIA.

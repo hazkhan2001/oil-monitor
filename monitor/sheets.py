@@ -32,6 +32,13 @@ def _clean_for_sheet(df: pd.DataFrame) -> pd.DataFrame:
     """Sheets can't hold NaN or datetime objects, so convert them to text."""
     out = df.copy()
     for col in out.columns:
+        # A missing value turns a whole integer column into floats, so 12
+        # would be written as "12.0" in one run and "12" in the next, and the
+        # two would no longer match as keys. Whole-number floats go back to ints.
+        if out[col].dtype.kind == "f":
+            vals = out[col].dropna()
+            if len(vals) and (vals == vals.round()).all():
+                out[col] = out[col].astype("Int64")
         if pd.api.types.is_datetime64_any_dtype(out[col]):
             out[col] = out[col].dt.strftime("%Y-%m-%d %H:%M:%S").str.replace(" 00:00:00", "", regex=False)
     out = out.astype(object).where(pd.notna(out), "")
@@ -80,9 +87,18 @@ class SheetWriter:
             ws = self.book.worksheet(tab)
         except gspread.WorksheetNotFound:
             ws = self.book.add_worksheet(tab, rows=max(len(df) + 10, 100), cols=max(len(df.columns), 5))
-        ws.clear()
         rows = [list(df.columns)] + df.values.tolist()
-        ws.update(rows, value_input_option="USER_ENTERED")
+        # RAW keeps text exactly as written. USER_ENTERED would let Google
+        # reinterpret "2026-10-20 04:48" as a date and hand it back in a
+        # different format, which breaks de-duplication on the next run.
+        ws.update(rows, value_input_option="RAW")
+        # Write first, then clear leftovers below/right, so a failed write
+        # never leaves an empty tab.
+        from gspread.utils import rowcol_to_a1
+        if ws.row_count > len(rows):
+            ws.batch_clear([f"A{len(rows) + 1}:{rowcol_to_a1(ws.row_count, max(ws.col_count, 1))}"])
+        if ws.col_count > len(df.columns):
+            ws.batch_clear([f"{rowcol_to_a1(1, len(df.columns) + 1)}:{rowcol_to_a1(len(rows), ws.col_count)}"])
         ws.freeze(rows=1)
 
     def upsert(self, tab: str, new: pd.DataFrame, keys: list[str], sort_by: list[str] | None = None) -> int:

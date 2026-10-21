@@ -50,7 +50,7 @@ def test_pixel_to_lonlat_corners():
 def test_persistent_objects_get_flagged_after_repeats():
     memory = {}
     platform = pd.DataFrame({"lat": [26.5], "lon": [56.4], "length_m": [80]})
-    for _ in range(6):
+    for _ in range(7):   # counts fade slightly each scene, so it takes ~6 to reach 5
         out = detect.flag_persistent("hormuz", platform, memory)
     assert bool(out["persistent"].iloc[0])
     passer = pd.DataFrame({"lat": [26.4], "lon": [56.3], "length_m": [250]})

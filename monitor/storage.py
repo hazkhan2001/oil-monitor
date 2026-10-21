@@ -79,9 +79,16 @@ def calibrate(index: pd.DataFrame, stocks: pd.DataFrame, farm: str = "cushing") 
     rows = index[index["aoi"] == farm].copy()
     if rows.empty or stocks.empty:
         return pd.DataFrame()
-    t = pd.to_datetime(rows["scene_time"], utc=True).dt.tz_localize(None)
-    x = stocks["date"].astype("int64").values
-    rows["eia_kbbl_interp"] = np.interp(t.astype("int64").values, x, stocks["cushing_kbbl"].values)
+    t = pd.to_datetime(rows["scene_time"], utc=True).dt.tz_localize(None).astype("datetime64[s]")
+    dates = stocks["date"].astype("datetime64[s]")
+    # np.interp would repeat the last known week for later scenes; drop them
+    # until EIA publishes the week they fall in.
+    inside = (t >= dates.min()) & (t <= dates.max())
+    rows, t = rows[inside.values].copy(), t[inside.values]
+    if rows.empty:
+        return pd.DataFrame()
+    rows["eia_kbbl_interp"] = np.interp(t.astype("int64").values, dates.astype("int64").values,
+                                        stocks["cushing_kbbl"].values)
     out = []
     for orbit, g in rows.groupby("relative_orbit"):
         for metric in ["bright_frac", "p95_db", "mean_db"]:

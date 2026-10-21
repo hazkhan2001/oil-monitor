@@ -145,7 +145,25 @@ def search_scenes(bbox, start: datetime, end: datetime, session=requests) -> lis
         # keying the dict on scene_id keeps one copy.
         if scene and scene.scene_id not in scenes:
             scenes[scene.scene_id] = scene
-    return sorted(scenes.values(), key=lambda s: s.start)
+    return one_per_pass(sorted(scenes.values(), key=lambda s: s.start))
+
+
+def one_per_pass(scenes: list[Scene], gap_s: float = 120) -> list[Scene]:
+    """Merge consecutive slices of the same satellite pass into one scene.
+
+    Sentinel-1 cuts each pass into ~25-second slices. A box on the boundary
+    intersects two slices that are really one image; analysing both would
+    count every ship twice. Slices from the same satellite less than
+    `gap_s` apart are merged, widening the time window to cover both.
+    """
+    merged: list[Scene] = []
+    for s in scenes:
+        last = merged[-1] if merged else None
+        if last and s.platform == last.platform and (s.start - last.end).total_seconds() < gap_s:
+            last.end = max(last.end, s.end)
+        else:
+            merged.append(Scene(**vars(s)))   # copy, so the caller's list isn't modified
+    return merged
 
 
 # --------------------------------------------------------------------------

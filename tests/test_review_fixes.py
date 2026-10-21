@@ -1,0 +1,102 @@
+"""Regression tests for bugs found in the independent code review."""
+
+from datetime import datetime, timedelta, timezone
+
+import numpy as np
+import pandas as pd
+
+from conftest import make_scene
+from monitor import ais, copernicus, detect, storage
+from monitor.copernicus import Scene
+
+T = datetime(2026, 10, 21, 2, 14, tzinfo=timezone.utc)
+
+
+def test_unknown_speed_and_course_are_not_projected():
+    rep = pd.DataFrame([
+        {"mmsi": 1, "time": (T - timedelta(minutes=10)).isoformat(), "lat": 26.0, "lon": 56.0, "sog": 102.3, "cog": 90},
+        {"mmsi": 2, "time": (T - timedelta(minutes=10)).isoformat(), "lat": 26.0, "lon": 56.0, "sog": 12, "cog": 360},
+    ])
+    now = ais.positions_at(rep, T, 15)
+    assert np.allclose(now.lat_pred, 26.0) and np.allclose(now.lon_pred, 56.0)
+
+
+def test_ship_touching_image_edge_is_found():
+    raster = make_scene([(0, 300, 10), (500, 990, 10)])   # top edge, right edge
+    dets = detect.detect_ships(raster, np.ones(raster.db.shape, bool), pixel_m=20)
+    assert len(dets) == 2
+
+
+def test_length_estimate_is_unbiased():
+    for L in (5, 10, 15):
+        mask = np.zeros((50, 50), bool); mask[20, 10:10 + L] = True
+        raster = make_scene([], shape=(50, 50))
+        dets = detect.blobs_to_table(mask, np.full((50, 50), 5.0), raster, pixel_m=20)
+        assert abs(dets.iloc[0]["length_m"] - L * 20) <= 10, (L, dets.iloc[0]["length_m"])
+
+
+def test_jittering_platform_is_still_flagged():
+    memory = {}
+    a = pd.DataFrame({"lat": [26.5000], "lon": [56.4], "length_m": [80]})
+    b = pd.DataFrame({"lat": [26.5031], "lon": [56.4], "length_m": [80]})   # next cell north
+    for i in range(12):
+        out = detect.flag_persistent("hormuz", a if i % 2 else b, memory)
+    assert bool(out["persistent"].iloc[0])
+
+
+def test_ship_that_leaves_stops_being_persistent_and_memory_stays_small():
+    memory = {}
+    anchored = pd.DataFrame({"lat": [36.0], "lon": [120.4], "length_m": [300]})
+    for _ in range(10):
+        detect.flag_persistent("qingdao", anchored, memory)
+    empty = pd.DataFrame(columns=["lat", "lon", "length_m"])
+    for _ in range(120):     # ~4 months of scenes without it
+        detect.flag_persistent("qingdao", empty, memory)
+    assert not bool(detect.flag_persistent("qingdao", anchored, memory, record=False)["persistent"].iloc[0])
+    assert len(memory["qingdao"]["hits"]) == 0
+
+
+def test_partial_scenes_do_not_dilute_memory():
+    memory = {}
+    p = pd.DataFrame({"lat": [26.5], "lon": [56.4], "length_m": [80]})
+    for _ in range(6):
+        detect.flag_persistent("hormuz", p, memory)
+    before = dict(memory["hormuz"])
+    detect.flag_persistent("hormuz", p.iloc[:0], memory, record=False)
+    assert memory["hormuz"] == before
+
+
+def test_adjacent_slices_of_one_pass_are_merged():
+    def sc(platform, t0):
+        return Scene(f"{platform}_{t0:%H%M%S}", "n", t0, t0 + timedelta(seconds=25), platform, "DV", "DESCENDING", 5)
+    slices = [sc("S1C", T), sc("S1C", T + timedelta(seconds=25)), sc("S1D", T + timedelta(seconds=40)),
+              sc("S1C", T + timedelta(days=6))]
+    merged = copernicus.one_per_pass(slices)
+    assert [s.scene_id for s in merged] == [slices[0].scene_id, slices[2].scene_id, slices[3].scene_id]
+    assert merged[0].end == slices[1].end and slices[0].end == T + timedelta(seconds=25)
+
+
+def test_integer_keys_stay_integers_when_a_value_is_missing(local_sheet):
+    local_sheet.upsert("S", pd.DataFrame({"aoi": ["x"], "scene_id": ["a"], "relative_orbit": [12]}), keys=["aoi", "scene_id"])
+    local_sheet.upsert("S", pd.DataFrame({"aoi": ["x", "x"], "scene_id": ["b", "c"], "relative_orbit": [12, None]}),
+                       keys=["aoi", "scene_id"])
+    assert list(local_sheet.read("S").relative_orbit.fillna("")) == ["12", "12", ""]
+
+
+def test_calibration_ignores_scenes_after_last_eia_week():
+    dates = pd.date_range("2026-01-02", periods=30, freq="7D")
+    stocks = pd.DataFrame({"date": dates, "cushing_kbbl": np.linspace(20000, 26000, 30)})
+    t = list(dates[:-1] + pd.Timedelta(days=3)) + [dates[-1] + pd.Timedelta(days=20)]
+    idx = pd.DataFrame({"aoi": "cushing", "scene_time": [x.strftime("%Y-%m-%d %H:%M") for x in t],
+                        "relative_orbit": "1", "bright_frac": np.linspace(0.01, 0.02, 30),
+                        "p95_db": 0.0, "mean_db": 0.0})
+    cal = storage.calibrate(idx, stocks)
+    assert cal[cal.metric == "bright_frac"].iloc[0]["n_scenes"] == 29
+
+
+def test_zero_baseline_gives_blank_not_inf():
+    from monitor import portwatch
+    rows = [{"date": f"2026-0{1 + d // 28}-{1 + d % 28:02d}", "portname": "X", "n_total": 0, "n_tanker": 0} for d in range(40)]
+    df = portwatch.add_metrics(portwatch.to_dataframe(rows))
+    df = df.replace([np.inf, -np.inf], np.nan)  # what pull() does
+    assert not np.isinf(pd.to_numeric(df["n_total_avg7_vs_avg30_pct"], errors="coerce")).any()

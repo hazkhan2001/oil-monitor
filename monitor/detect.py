@@ -69,7 +69,9 @@ def cfar_mask(db: np.ndarray, valid: np.ndarray,
 def blobs_to_table(mask: np.ndarray, db: np.ndarray, raster, pixel_m: float) -> pd.DataFrame:
     """Turn the target mask into one row per candidate ship."""
     # Close 1-pixel gaps so one ship split by speckle counts once.
-    joined = ndimage.binary_closing(mask, structure=np.ones((3, 3)))
+    # Pad by one pixel first: closing treats outside the image as empty and
+    # would otherwise erase ships touching the edge.
+    joined = ndimage.binary_closing(np.pad(mask, 1), structure=np.ones((3, 3)))[1:-1, 1:-1]
     labels, n = ndimage.label(joined, structure=np.ones((3, 3)))
     rows = []
     for idx, slc in enumerate(ndimage.find_objects(labels), start=1):
@@ -82,11 +84,11 @@ def blobs_to_table(mask: np.ndarray, db: np.ndarray, raster, pixel_m: float) -> 
             continue
         weights = 10 ** (db[rr, cc] / 10)
         r0, c0 = np.average(rr, weights=weights), np.average(cc, weights=weights)
-        # Length along the blob's main axis: for a uniform line of length L,
-        # the variance along it is L^2/12, so L = sqrt(12 * variance).
+        # Length along the blob's main axis: a line of L pixels has position
+        # variance (L^2 - 1) / 12, so L = sqrt(12 * variance + 1).
         if len(rr) > 2:
-            cov = np.cov(np.vstack([rr, cc]))
-            length_px = np.sqrt(12 * max(np.linalg.eigvalsh(cov)[-1], 0)) + 1
+            cov = np.cov(np.vstack([rr, cc]), bias=True)
+            length_px = np.sqrt(12 * max(np.linalg.eigvalsh(cov)[-1], 0) + 1)
         else:
             length_px = len(rr)
         length_m = float(length_px * pixel_m)
@@ -118,30 +120,37 @@ def _cells(df: pd.DataFrame) -> list[str]:
     return [f"{round(la / CELL_DEG)}:{round(lo / CELL_DEG)}" for la, lo in zip(df["lat"], df["lon"])]
 
 
-def flag_persistent(aoi_key: str, dets: pd.DataFrame, memory: dict,
-                    min_scenes: int = 5, min_share: float = 0.6) -> pd.DataFrame:
-    """Mark detections at spots that were bright in most past scenes.
+def flag_persistent(aoi_key: str, dets: pd.DataFrame, memory: dict, record: bool = True,
+                    min_scenes: float = 5, min_share: float = 0.6, decay: float = 0.97) -> pd.DataFrame:
+    """Mark detections at spots that were bright in most recent scenes.
 
     These are usually platforms or navigation marks, but a tanker sitting at
     anchor for weeks is persistent too, which at Qingdao or Fujairah can mean
     floating storage. So we flag rather than delete, and count both.
-    `memory` is updated in place: {aoi: {"scenes": n, "hits": {cell: n}}}.
+
+    `memory` is updated in place: {aoi: {"scenes": x, "hits": {cell: x}}}.
+    Counts fade by `decay` each scene (an exponential moving window of
+    roughly the last 30 scenes), so a ship that anchored for a month and left
+    stops being "persistent", and stale cells get pruned. Pass record=False
+    for scenes that only partly cover the box, so they can't dilute the share.
     """
-    mem = memory.setdefault(aoi_key, {"scenes": 0, "hits": {}})
+    mem = memory.setdefault(aoi_key, {"scenes": 0.0, "hits": {}})
     dets = dets.copy()
     cells = _cells(dets) if len(dets) else []
     flags = []
     for cell in cells:
         la, lo = (int(x) for x in cell.split(":"))
-        # look at this cell and its 8 neighbours, since positions jitter
-        hits = max(mem["hits"].get(f"{la + a}:{lo + b}", 0) for a in (-1, 0, 1) for b in (-1, 0, 1))
-        flags.append(mem["scenes"] >= min_scenes and hits / mem["scenes"] >= min_share)
+        # Sum this cell and its 8 neighbours: a platform's position jitters
+        # across cell borders from scene to scene. Cap at the scene count.
+        hits = sum(mem["hits"].get(f"{la + a}:{lo + b}", 0) for a in (-1, 0, 1) for b in (-1, 0, 1))
+        share = min(hits, mem["scenes"]) / mem["scenes"] if mem["scenes"] else 0
+        flags.append(bool(mem["scenes"] >= min_scenes and share >= min_share))
     dets["persistent"] = flags
-    # then record this scene
-    mem["scenes"] += 1
-    for cell in set(cells):
-        mem["hits"][cell] = mem["hits"].get(cell, 0) + 1
-    # forget cells that are rare and old so the file stays small
-    if mem["scenes"] % 20 == 0:
-        mem["hits"] = {c: n for c, n in mem["hits"].items() if n >= 2}
+    if record:
+        mem["scenes"] = mem["scenes"] * decay + 1
+        mem["hits"] = {c: n * decay for c, n in mem["hits"].items() if n * decay >= 0.3}
+        for cell in set(cells):
+            mem["hits"][cell] = mem["hits"].get(cell, 0) + 1
+        mem["scenes"] = round(mem["scenes"], 4)
+        mem["hits"] = {c: round(n, 4) for c, n in mem["hits"].items()}
     return dets
