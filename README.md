@@ -36,6 +36,16 @@ downloadable artifact on every run (Actions tab > a run > Artifacts).
 - **Storage is uncalibrated until `Storage_Calibration` says `usable`.** At
   10 m resolution this is an experiment. If Cushing never tracks EIA, ignore
   the storage tabs.
+- **AIS-based numbers undercount in conflict zones.** Since March 2026
+  Hormuz has been largely shut to non-Iran-linked shipping, with reports of
+  transponders switched off and positions spoofed. PortWatch (built on AIS)
+  can't see dark traffic; the radar counts can. Spoofing also means AIS
+  matches near Hormuz are less reliable, so expect more `low` confidence
+  dark candidates there.
+- **The 1-year baseline erodes during a long disruption.** As months of
+  closure enter the 365-day window, "vs 1-year" shrinks even if nothing
+  improves. Compare against the same months of 2025 in `Chokepoints_Daily`
+  for the pre-conflict level.
 - **Boxes are hand-drawn.** Check the quicklooks after the first runs and
   adjust `config.py` if a box sits wrong.
 
