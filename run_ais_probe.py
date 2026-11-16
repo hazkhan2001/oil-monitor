@@ -26,7 +26,8 @@ import websockets
 import config
 from monitor.ais import WS_URL
 
-SECONDS = 90
+SECONDS = int(os.environ.get("PROBE_SECONDS", "90"))
+WORLD = os.environ.get("PROBE_WORLD") == "1"   # subscribe to the whole planet to measure coverage
 CONTROL = ("dover_control", (-0.5, 50.6, 2.0, 51.3))        # lon0, lat0, lon1, lat1
 BOXES = [(a.key, a.bbox) for a in config.AOIS if a.key in ("suez", "bab", "hormuz", "gulfoman", "malacca")] + [CONTROL]
 
@@ -40,7 +41,8 @@ async def main() -> int:
     print(f"key present: {bool(key)}, length {len(key)}")
     if not key:
         return 1
-    sub = {"APIKey": key, "BoundingBoxes": [lat_lon_box(b) for _, b in BOXES],
+    boxes = [[[-90, -180], [90, 180]]] if WORLD else [lat_lon_box(b) for _, b in BOXES]
+    sub = {"APIKey": key, "BoundingBoxes": boxes,
            "FilterMessageTypes": ["PositionReport", "StandardClassBPositionReport", "ShipStaticData"]}
     kinds, per_box, errors, first = Counter(), Counter(), [], []
     t0 = time.monotonic()
@@ -63,12 +65,13 @@ async def main() -> int:
                 lat, lon = meta.get("latitude", meta.get("Latitude")), meta.get("longitude", meta.get("Longitude"))
                 if lat is not None and lon is not None:
                     for name, (x0, y0, x1, y1) in BOXES:
-                        if y0 - 0.2 <= lat <= y1 + 0.2 and x0 - 0.2 <= lon <= x1 + 0.2:
+                        if y0 - 1.0 <= lat <= y1 + 1.0 and x0 - 1.0 <= lon <= x1 + 1.0:
                             per_box[name] += 1
                 if len(first) < 2:
                     first.append({k: msg.get("MetaData", {}).get(k) for k in ("MMSI", "latitude", "longitude", "time_utc")} | {"type": msg.get("MessageType")})
     except Exception as exc:   # report whatever happened rather than crash silently
         print(f"CONNECTION PROBLEM: {exc!r}")
+    print(f"world mode: {WORLD}, seconds: {SECONDS}")
     print(f"messages by type: {dict(kinds)}")
     print(f"messages per box: {dict(per_box)}")
     print(f"server errors: {errors[:3]}")

@@ -1,7 +1,13 @@
 # Manual 90-second check of the AIS feed. Run it from the Actions tab (or `gh workflow run ais-probe`).
 name: ais-probe
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      world:
+        description: "1 = subscribe to the whole world to measure coverage"
+        default: "0"
+      seconds:
+        default: "90"
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -15,4 +21,6 @@ jobs:
       - run: pip install -r requirements.txt
       - env:
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          PROBE_WORLD: ${{ inputs.world }}
+          PROBE_SECONDS: ${{ inputs.seconds }}
         run: python run_ais_probe.py
