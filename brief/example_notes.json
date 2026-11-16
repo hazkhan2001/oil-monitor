@@ -1,0 +1,73 @@
+{
+  "edition": "MON 16 NOV 2026 · PREVIEW",
+  "written": "3:55 PM ET",
+  "headline": "Tech sells off before Nvidia, crude slides as Hormuz traffic recovers, and rates stay the week's real story",
+  "lead": [
+    "US stocks are on track for a broad down day: Nasdaq -2.5%, S&P 500 -2.0%, VIX up 24% to 23.9 late in the session.",
+    "Nvidia (-4.5% intraday) reports Tuesday, its first quarter since Jensen Huang stepped down; the board is reportedly not considering his return.",
+    "Rates are doing the heavy lifting: the US 2Y rose 42bp in five sessions to 4.88% and the 10Y sits at 5.15%. Wednesday's FOMC minutes should show how many officials leaned toward a hike.",
+    "Brent fell 3.7% to $92.29 and heating oil 6.2% as reports said Hormuz shipments keep recovering, even as a third US carrier arrived in the region and Tehran warned it may strike first.",
+    "Your Oil Monitor still shows Hormuz near-dark on transponders through Nov 8, so the recovery is in reported flows, not in visible ship counts.",
+    "Thursday brings the Anthropic IPO (range $70-78) and Philly Fed; OPEC+ meets Nov 29."
+  ],
+  "geopolitics": [
+    {"tag": "IRAN", "text": "Tehran warned it may strike first if the US attacks again. The USS Theodore Roosevelt arrived in the region, making three US carriers in CENTCOM's area.", "source": "Al Jazeera", "url": "https://www.aljazeera.com/news/liveblog/2026/11/16/iran-war-live-tehran-warns-it-may-strike-first-before-another-us-attack"},
+    {"tag": "GULF", "text": "Bahrain said it intercepted Iranian aerial attacks after a nationwide threat alert on Sunday.", "source": "The National", "url": "https://www.thenationalnews.com/news/mena/2026/11/15/iran-war-live-bahrain-nationwide-threat-alert/"},
+    {"tag": "IRAN", "text": "Foreign Minister Araghchi called for closer energy cooperation with regional producers and warned renewed US-Israeli strikes threaten stability. Iran and Pakistan also held talks.", "source": "Al Jazeera", "url": "https://www.aljazeera.com/news/liveblog/2026/11/16/iran-war-live-tehran-warns-it-may-strike-first-before-another-us-attack"},
+    {"tag": "YEMEN", "text": "Houthi forces are edging closer to Aden; sources put them within 80km as of Nov 2. They already hold the coast at Bab el-Mandeb.", "source": "Newsquawk", "url": "https://www.newsquawk.com/headlines/yemeni-houthis-have-advanced-to-within-80kn-of-aden-according-to-sources"},
+    {"tag": "UKR", "text": "Russian strikes killed three in Kherson, Dnipro and Zaporizhia regions. Zelenskyy says attacks on energy and heating infrastructure are intensifying before winter. Last week's Abu Dhabi talks produced a prisoner swap, no breakthrough.", "source": "Al Jazeera", "url": "https://www.aljazeera.com/news/2026/11/16/russian-attacks-kill-three-in-ukraine-eu-accuses-moscow-of-prolonging-war"},
+    {"tag": "SANCT", "text": "The EU sanctioned nearly 50 banks and financial institutions plus people tied to Russia's oil and petroleum trade. Kallas accused Moscow of maximalist demands to prolong the war.", "source": "Al Jazeera", "url": "https://www.aljazeera.com/news/2026/11/16/russian-attacks-kill-three-in-ukraine-eu-accuses-moscow-of-prolonging-war"}
+  ],
+  "energy": [
+    {"tag": "CRUDE", "text": "Brent -3.7% to $92.29 and WTI -3.5% to $85.46 on the day, with Brent down 16% over a month. Prices fell as Hormuz shipments continued to recover.", "source": "Yahoo Finance", "url": "https://finance.yahoo.com/markets/live/stock-market-today-monday-november-16-dow-sp-500-nasdaq-nvidia-oil-091631084.html"},
+    {"tag": "SUPPLY", "text": "Iranian output was 1.86m b/d in October, 46% below pre-war, with Iraq and the UAE adding 1.3m b/d. The IEA sees a Q4 surplus that widens in 2027, but onshore stocks are the lowest since at least 2016.", "source": "BigGo Finance", "url": "https://finance.biggo.com/news/bc6e7caa-3956-472a-b8df-0e750ec1aec6"},
+    {"tag": "PRODUCTS", "text": "Heating oil fell 6.2% and RBOB 4.5% today; the 3-2-1 crack is about $40.57/bbl. European diesel was near $180/bbl in mid-November, about 77% above pre-war.", "source": "BigGo Finance", "url": "https://finance.biggo.com/news/bc6e7caa-3956-472a-b8df-0e750ec1aec6"},
+    {"tag": "OPEC+", "text": "Seven producers including Saudi Arabia and Russia review output on Nov 29. They agreed on Nov 1 to hold September levels through December.", "source": "BigGo Finance", "url": "https://finance.biggo.com/news/bc6e7caa-3956-472a-b8df-0e750ec1aec6"}
+  ],
+  "oil_monitor": {
+    "summary": "Hormuz is still near-dark on transponders and both Gulf chokepoints flag EXTREME. PortWatch counts ships with AIS switched on, not barrels, so this can diverge from reported flows. PortWatch data runs through Nov 8; Cushing is the EIA week of Nov 6.",
+    "rows": [
+      ["Hormuz tankers / day (7D)", "1.0 (-97.7% y/y)", "EXTREME"],
+      ["Bab el-Mandeb tankers / day", "6.9 (-55.6% y/y)", "EXTREME"],
+      ["Suez all vessels / day", "44.4 (+0.6% y/y)", "Normal"],
+      ["Cushing stocks", "27,356 kbbl (+106 w/w, +21.5% y/y)", "z +1.82"],
+      ["Brent-WTI (EIA spot, Nov 11)", "$2.52", ""]
+    ],
+    "url": "https://claude.ai/artifact/Wx8jYJ9ia4vpRiHVpTLh1G"
+  },
+  "markets": [
+    {"tag": "AI", "text": "Nvidia fell 4.5% intraday after CNBC reported the board is not considering bringing Huang back, ahead of Tuesday's results. Consensus revenue is $109.1B.", "source": "Yahoo Finance", "url": "https://finance.yahoo.com/markets/live/stock-market-today-monday-november-16-dow-sp-500-nasdaq-nvidia-oil-091631084.html"},
+    {"tag": "RATES", "text": "US 2Y 4.88% and 10Y 5.15% at Friday's close, up 42bp and 31bp over five sessions. Wednesday's minutes from the Oct 27-28 FOMC should show how many of 19 participants leaned toward a hike.", "source": "Yardeni QuickTakes", "url": "https://www.yardeniquicktakes.com/economic-week-ahead-november-16-20/"},
+    {"tag": "FX", "text": "The Philippine peso was the day's outlier: USD/PHP +1.4% to 63.85, a 3.8-sigma move for the pair. The dollar index is up 1.9% on the week.", "source": "Yahoo Finance data", "url": ""},
+    {"tag": "STOCKS", "text": "Intel fell more than 6% after investors filed a class action. Europe closed modestly lower (DAX -0.6%, FTSE -0.2%).", "source": "Yahoo Finance", "url": "https://finance.yahoo.com/markets/live/stock-market-today-monday-november-16-dow-sp-500-nasdaq-nvidia-oil-091631084.html"}
+  ],
+  "calendar": [
+    {"when": "TUE 11/17", "event": "Nvidia Q3 earnings", "detail": "Consensus revenue $109.1B vs $108B guidance; first call under interim CEO Colette Kress"},
+    {"when": "TUE 11/17", "event": "US retail sales and industrial production (Oct)", "detail": "September: retail sales +0.8% m/m, industrial production +0.7% m/m"},
+    {"when": "WED 11/18", "event": "FOMC minutes (Oct 27-28)", "detail": "Watch the count leaning toward a hike; NY Fed's Williams also speaks"},
+    {"when": "WED 11/18", "event": "EIA weekly petroleum status", "detail": "Cushing last printed 27.36m bbl"},
+    {"when": "THU 11/19", "event": "Anthropic IPO, Philly Fed, jobless claims", "detail": "IPO range $70-78 ($1.26-1.40T valuation); claims prior 200k"},
+    {"when": "SUN 11/29", "event": "OPEC+ ministerial meeting", "detail": "Policy for January onward"}
+  ],
+  "watch_notes": {
+    "XOM": {"text": "Example row. By mid-September the majors were up about 40% this year while refiners had roughly doubled.", "source": "Oilprice.com, Sep 14", "url": "https://oilprice.com/Energy/Crude-Oil/Global-Fuel-Squeeze-Triggers-US-Refiners-Stocks-Rally.html"},
+    "CVX": {"text": "Example row. Replace these with your own names in the Watchlist tab."},
+    "PSX/VLO": {"text": "Example row. Both refiners have ridden record product cracks. Today VLO fell 2.9% and PSX 2.2% as heating oil dropped 6.2%.", "source": "Oilprice.com, Sep 14", "url": "https://oilprice.com/Energy/Crude-Oil/Global-Fuel-Squeeze-Triggers-US-Refiners-Stocks-Rally.html"}
+  },
+  "yield_fills": [
+    {"country": "Pakistan", "tenor": "10Y", "yield_pct": 12.622, "chg_1d_bp": 1.8, "asof": "2026-11-16", "source": "Trading Economics", "url": "https://tradingeconomics.com/pakistan/government-bond-yield"},
+    {"country": "Saudi Arabia", "tenor": "10Y", "yield_pct": null, "asof": "no free daily quote found", "source": ""},
+    {"country": "UAE", "tenor": "10Y", "yield_pct": null, "asof": "no local benchmark", "source": ""}
+  ],
+  "sources": [
+    {"title": "Al Jazeera: Iran war live, Nov 16", "url": "https://www.aljazeera.com/news/liveblog/2026/11/16/iran-war-live-tehran-warns-it-may-strike-first-before-another-us-attack"},
+    {"title": "The National: Bahrain intercepts Iranian aerial attacks", "url": "https://www.thenationalnews.com/news/mena/2026/11/15/iran-war-live-bahrain-nationwide-threat-alert/"},
+    {"title": "Newsquawk: Houthis within 80km of Aden", "url": "https://www.newsquawk.com/headlines/yemeni-houthis-have-advanced-to-within-80kn-of-aden-according-to-sources"},
+    {"title": "Al Jazeera: Russian attacks kill three; EU sanctions", "url": "https://www.aljazeera.com/news/2026/11/16/russian-attacks-kill-three-in-ukraine-eu-accuses-moscow-of-prolonging-war"},
+    {"title": "Yahoo Finance: Stock market today, Nov 16", "url": "https://finance.yahoo.com/markets/live/stock-market-today-monday-november-16-dow-sp-500-nasdaq-nvidia-oil-091631084.html"},
+    {"title": "BigGo Finance: Brent and the Nov 29 OPEC+ verdict", "url": "https://finance.biggo.com/news/bc6e7caa-3956-472a-b8df-0e750ec1aec6"},
+    {"title": "Yardeni: Economic week ahead, Nov 16-20", "url": "https://www.yardeniquicktakes.com/economic-week-ahead-november-16-20/"},
+    {"title": "Oilprice.com: Fuel squeeze lifts US refiners", "url": "https://oilprice.com/Energy/Crude-Oil/Global-Fuel-Squeeze-Triggers-US-Refiners-Stocks-Rally.html"},
+    {"title": "Trading Economics: Pakistan 10Y yield", "url": "https://tradingeconomics.com/pakistan/government-bond-yield"}
+  ]
+}

@@ -101,7 +101,7 @@ def step_intl_yields() -> list[dict]:
         # CNBC quotes a yield's change in percentage points; x100 gives basis points.
         rows.append({"country": country, "tenor": tenor, "yield_pct": r(q["last"], 3),
                      "chg_1d_bp": r(q["change"] * 100, 1) if q["change"] is not None else None,
-                     "asof": q["time"], "source": f"CNBC {hit}"})
+                     "asof": q["time"][:10], "source": f"CNBC {hit}"})
     log("intl_yields", "warning" if missing else "ok",
         f"{len(rows)} found" + (f"; not found: {', '.join(missing)}" if missing else ""))
     return rows

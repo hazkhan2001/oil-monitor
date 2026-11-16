@@ -47,6 +47,20 @@ def closes(symbols: list[str], period: str = "6mo") -> dict[str, pd.Series]:
         if len(col):
             col.index = pd.to_datetime(col.index).tz_localize(None)
             out[sym] = col
+    # LESSON: a multi-ticker download lines every symbol up on one shared set
+    # of dates, and Yahoo sometimes leaves the newest day blank for Asian
+    # indices in that shared table. Any symbol whose last day lags the others
+    # is fetched again on its own, which returns the missing day.
+    if out:
+        newest = max(s.index[-1] for s in out.values())
+        for sym in [k for k, s in out.items() if s.index[-1] < newest]:
+            try:
+                h = yf.Ticker(sym).history(period=period, interval="1d", auto_adjust=False)["Close"].dropna()
+                h.index = pd.to_datetime(h.index).tz_localize(None).normalize()
+                if len(h) and h.index[-1] > out[sym].index[-1]:
+                    out[sym] = h
+            except Exception:
+                pass
     return out
 
 
