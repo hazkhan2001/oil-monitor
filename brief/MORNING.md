@@ -19,8 +19,8 @@ Claude writes only the words, then renders and republishes the page.
      the lead that the data job hasn't run yet and that prices are from the
      previous run. Never fill missing numbers from memory or estimate them.
    - Read the `brief_*` tabs for markets, yields, weather and the watchlist.
-2. **Oil Monitor.** Use the `oil-monitor-brief` skill's script on the same
-   xlsx and follow that skill's reading rules (PortWatch counts transponders,
+2. **Oil Monitor.** Run `python3 -I brief/oil_readout.py <xlsx>` (the same
+   script as the `oil-monitor-brief` skill) and follow that skill's reading rules (PortWatch counts transponders,
    not barrels; prefer the same-season z; give the data dates).
 3. **Research** with web search, today's date in queries:
    - Geopolitics: Iran war and Gulf, Israel, Yemen/Red Sea, Russia-Ukraine
