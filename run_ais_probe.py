@@ -29,7 +29,7 @@ from monitor.ais import WS_URL
 SECONDS = int(os.environ.get("PROBE_SECONDS", "90"))
 WORLD = os.environ.get("PROBE_WORLD") == "1"   # subscribe to the whole planet to measure coverage
 CONTROL = ("dover_control", (-0.5, 50.6, 2.0, 51.3))        # lon0, lat0, lon1, lat1
-BOXES = [(a.key, a.bbox) for a in config.AOIS] + [CONTROL]
+BOXES = [(a.key, a.bbox) for a in config.AOIS] + [("rotterdam", (3.8, 51.8, 4.3, 52.1)), CONTROL]
 
 
 def lat_lon_box(b):                                           # AISstream wants [lat, lon] corners
@@ -45,6 +45,7 @@ async def main() -> int:
     sub = {"APIKey": key, "BoundingBoxes": boxes,
            "FilterMessageTypes": ["PositionReport", "StandardClassBPositionReport", "ShipStaticData"]}
     kinds, per_box, errors, first = Counter(), Counter(), [], []
+    per_min = Counter()   # messages per elapsed minute, to see whether the stream stalls
     t0 = time.monotonic()
     try:
         async with websockets.connect(WS_URL, max_size=None, open_timeout=20) as ws:
@@ -61,6 +62,7 @@ async def main() -> int:
                     errors.append(str(msg["error"])[:200])
                     continue
                 kinds[msg.get("MessageType")] += 1
+                per_min[int((time.monotonic() - t0) // 60)] += 1
                 meta = msg.get("MetaData", {})
                 lat, lon = meta.get("latitude", meta.get("Latitude")), meta.get("longitude", meta.get("Longitude"))
                 if lat is not None and lon is not None:
@@ -73,6 +75,7 @@ async def main() -> int:
         print(f"CONNECTION PROBLEM: {exc!r}")
     print(f"world mode: {WORLD}, seconds: {SECONDS}")
     print(f"messages by type: {dict(kinds)}")
+    print(f"messages per minute: {dict(sorted(per_min.items()))}")
     print(f"messages per box: {dict(per_box)}")
     print(f"server errors: {errors[:3]}")
     print(f"first messages: {first}")
