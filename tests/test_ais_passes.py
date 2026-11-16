@@ -67,8 +67,8 @@ def test_prediction_adds_twelve_days(monkeypatch):
     past = Scene("S1C_x", "n", T - timedelta(days=12), T - timedelta(days=12) + timedelta(seconds=30),
                  "S1C", "DV", "DESCENDING", 5)
     monkeypatch.setattr(passes.copernicus, "search_scenes", lambda *a, **k: [past])
-    preds = passes.predict([AOI_BY_KEY["hormuz"]], now=T - timedelta(hours=2))
-    assert preds == [{"aoi": "hormuz", "time": T.isoformat(), "platform": "S1C"}]
+    preds = passes.predict([AOI_BY_KEY["cape"]], now=T - timedelta(hours=2))   # cape is a box with ais=True
+    assert preds == [{"aoi": "cape", "time": T.isoformat(), "platform": "S1C"}]
 
 
 def test_windows_merge_neighbouring_passes():

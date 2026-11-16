@@ -39,18 +39,24 @@ class AOI:
     land_buffer_m: int = 1500   # ignore detections this close to land
 
 
+# AIS COVERAGE (measured Nov 16, 2026 with run_ais_probe.py, 5 minutes of the
+# whole-world AISstream feed, about 20,000 messages): Rotterdam and the Dover
+# Strait are well covered, the Cape a little, and there were ZERO messages near
+# Hormuz, the Gulf of Oman, Bab el-Mandeb, Suez, Malacca, Qingdao or Ningbo.
+# AISstream's free feed has no receivers there, so recording is pointless and
+# `ais=False` for those boxes. Flip it back to True if a better AIS source is added.
 AOIS = [
     # --- chokepoints: ship counts + dark-vessel matching --------------------
     AOI("hormuz", "Strait of Hormuz", "chokepoint",
-        (56.20, 26.30, 56.70, 26.65), ais=True, portwatch="Strait of Hormuz"),
+        (56.20, 26.30, 56.70, 26.65), ais=False, portwatch="Strait of Hormuz"),
     AOI("bab", "Bab el-Mandeb", "chokepoint",
-        (43.20, 12.45, 43.50, 12.75), ais=True, portwatch="Bab el-Mandeb Strait"),
+        (43.20, 12.45, 43.50, 12.75), ais=False, portwatch="Bab el-Mandeb Strait"),
     AOI("malacca", "Malacca Strait (Port Dickson narrows)", "chokepoint",
-        (101.60, 2.00, 102.10, 2.40), ais=True, portwatch="Malacca Strait"),
+        (101.60, 2.00, 102.10, 2.40), ais=False, portwatch="Malacca Strait"),
     # The canal itself is ~300 m wide, narrower than our 1 km land mask, so we
     # watch the southern anchorage where ships queue for the convoy instead.
     AOI("suez", "Suez southern anchorage", "chokepoint",
-        (32.45, 29.75, 32.65, 29.95), ais=True, portwatch="Suez Canal",
+        (32.45, 29.75, 32.65, 29.95), ais=False, portwatch="Suez Canal",
         land_buffer_m=1000),
     AOI("cape", "Cape of Good Hope", "chokepoint",
         (18.00, -34.60, 18.60, -34.20), ais=True, portwatch="Cape of Good Hope"),
@@ -59,13 +65,13 @@ AOIS = [
     # leaving Hormuz, often with transponders off. Approximate box: check the
     # quicklook after the first pass and adjust.
     AOI("gulfoman", "Gulf of Oman (Fujairah anchorage)", "terminal",
-        (56.35, 25.15, 56.85, 25.60), ais=True),
+        (56.35, 25.15, 56.85, 25.60), ais=False),
 
     # --- Chinese import terminals: anchorage queues -------------------------
     AOI("qingdao", "Qingdao anchorage", "terminal",
-        (120.20, 35.80, 120.60, 36.05), ais=True),
+        (120.20, 35.80, 120.60, 36.05), ais=False),
     AOI("ningbo", "Ningbo-Zhoushan anchorage", "terminal",
-        (122.00, 29.85, 122.35, 30.05), ais=True),
+        (122.00, 29.85, 122.35, 30.05), ais=False),
 
     # --- tank farms: storage index (10 m, no land mask, no AIS) -------------
     # Approximate boxes. Check the quicklooks after the first run.
