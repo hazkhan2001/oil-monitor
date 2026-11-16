@@ -29,7 +29,7 @@ from monitor.ais import WS_URL
 SECONDS = int(os.environ.get("PROBE_SECONDS", "90"))
 WORLD = os.environ.get("PROBE_WORLD") == "1"   # subscribe to the whole planet to measure coverage
 CONTROL = ("dover_control", (-0.5, 50.6, 2.0, 51.3))        # lon0, lat0, lon1, lat1
-BOXES = [(a.key, a.bbox) for a in config.AOIS if a.key in ("suez", "bab", "hormuz", "gulfoman", "malacca")] + [CONTROL]
+BOXES = [(a.key, a.bbox) for a in config.AOIS] + [CONTROL]
 
 
 def lat_lon_box(b):                                           # AISstream wants [lat, lon] corners
