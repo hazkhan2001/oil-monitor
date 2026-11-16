@@ -1,0 +1,37 @@
+# The numbers half of the morning market brief.
+#
+# LESSON: cron is in UTC. "15 10 * * 1-5" = 10:15 UTC Monday to Friday
+#   = 5:15 AM New York in winter (EST), 6:15 AM in summer (EDT).
+# GitHub can start scheduled runs up to ~30 minutes late, so this runs
+# early enough to be done before Claude writes the brief at 6:45 AM.
+name: brief
+
+on:
+  schedule:
+    - cron: "15 10 * * 1-5"
+  workflow_dispatch: {}          # "Run workflow" button in the Actions tab
+  push:                          # also runs when the brief's code changes,
+    branches: [main]             # which is how a fix gets tested right away
+    paths: ["brief/**", "run_brief.py", ".github/workflows/brief.yml"]
+
+concurrency:
+  group: brief
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: brief/requirements.txt
+      - run: pip install -r brief/requirements.txt
+      - name: Run the brief data job
+        env:
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: python run_brief.py

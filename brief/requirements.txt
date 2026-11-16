@@ -1,0 +1,9 @@
+# Only what run_brief.py needs, so the brief job installs in seconds.
+pandas==3.0.5
+numpy==2.5.3
+requests==2.34.2
+gspread==6.2.1
+google-auth==2.62.0
+# yfinance is left unpinned on purpose: Yahoo changes its site often and
+# old yfinance versions break, so the newest release is the safest one.
+yfinance
