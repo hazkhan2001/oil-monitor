@@ -19,6 +19,9 @@ Claude writes only the words, then renders and republishes the page.
      the lead that the data job hasn't run yet and that prices are from the
      previous run. Never fill missing numbers from memory or estimate them.
    - Read the `brief_*` tabs for markets, yields, weather and the watchlist.
+   - If `brief_status` lists stale symbols (often the Asian indices), get
+     those markets' latest close from a news article, say so in the
+     markets section with the source, and never call the stale row today's.
 2. **Oil Monitor.** Run `python3 -I brief/oil_readout.py <xlsx>` (the same
    script as the `oil-monitor-brief` skill) and follow that skill's reading rules (PortWatch counts transponders,
    not barrels; prefer the same-season z; give the data dates).

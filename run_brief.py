@@ -66,8 +66,14 @@ def step_markets(sheet: SheetWriter) -> None:
         rows.append({"group": "Energy", "name": "3-2-1 crack ($/bbl)", "symbol": "calc",
                      "last": r(crack), "asof": data["CL=F"].index[-1].strftime("%Y-%m-%d")})
     sheet.replace(TAB_MARKETS, pd.DataFrame(rows))
-    log("markets", "warning" if missing else "ok",
-        f"{len(rows)} rows" + (f"; Yahoo returned nothing for {', '.join(missing)}" if missing else ""))
+    # Flag any symbol whose newest price is 2+ days older than the freshest one,
+    # so the morning write-up knows not to present it as today's close.
+    newest = max(str(r["asof"]) for r in rows if r.get("asof"))
+    stale = [f"{r['symbol']} ({r['asof']})" for r in rows
+             if r.get("asof") and (pd.Timestamp(newest) - pd.Timestamp(r["asof"])).days >= 2]
+    notes = ([f"Yahoo returned nothing for {', '.join(missing)}"] if missing else []) + \
+            ([f"stale vs {newest}: {', '.join(stale)}"] if stale else [])
+    log("markets", "warning" if notes else "ok", f"{len(rows)} rows" + "".join(f"; {n}" for n in notes))
 
 
 def step_us_yields() -> list[dict]:
