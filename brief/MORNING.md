@@ -39,6 +39,22 @@ Claude writes only the words, then renders and republishes the page.
      search once each. If found, add to `yield_fills` with the source and
      date. If not, add the row with `yield_pct: null` and `asof: "no free
      daily quote found"` (UAE: `"no local benchmark"`).
+   - Retail fuel (standing permission to fetch these pages):
+     EIA weekly retail: fetch https://www.eia.gov/dnav/pet/pet_pri_gnd_dcus_nus_w.htm
+     (not /petroleum/gasdiesel/, which has served a stale cached copy). Take the
+     latest week's US regular and US on-highway diesel, the week date and the
+     week-on-week change. If the table shows no numbers, search "EIA weekly
+     retail gasoline diesel" with this week's date and cite the page that
+     quotes the EIA survey. EIA posts Monday around 5 PM ET, so a Monday brief
+     shows the prior week; label it with its week date.
+     AAA: fetch https://gasprices.aaa.com/ (national regular and diesel, today
+     and a week ago) and https://gasprices.aaa.com/?state=NJ (NJ regular and
+     diesel, today and a week ago), with each page's "as of" date.
+     Add one row each at the END of `oil_monitor.rows` as `[label, value, ""]`,
+     e.g. `["US regular, retail (EIA, week of 11/16)", "$3.805 (-$0.190 w/w)", ""]`,
+     `["NJ regular (AAA, 11/22)", "$3.819 (wk ago $3.947)", ""]`. Add each page
+     to `sources`. If a figure can't be retrieved, leave its row out and say so
+     in one line of the summary.
    Open the actual articles with web fetch; search snippets alone are too thin.
 4. **Write the notes JSON** in the scratchpad, same keys as
    `brief/example_notes.json`. Rules:
